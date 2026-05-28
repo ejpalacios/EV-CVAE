@@ -1,0 +1,38 @@
+figure.figsize: 3.5, 2.18
+figure.dpi: 150
+figure.constrained_layout.use: true
+
+lines.linewidth: 1
+lines.markersize: 3
+
+font.size: 8
+font.family: sans-serif
+
+axes.grid: False
+axes.linewidth: 0.5
+axes.labelsize: 8
+axes.titlesize: 8
+axes.spines.right: False
+axes.spines.top: False
+
+grid.linestyle: "dashed"
+grid.alpha: 0.5
+grid.linewidth: 0.3
+
+legend.fontsize: 7
+legend.frameon: True
+
+xtick.major.width: 0.5
+xtick.labelsize: 7
+ytick.major.width: 0.5
+ytick.labelsize: 7
+
+boxplot.flierprops.linewidth: 0.5
+boxplot.boxprops.linewidth: 0.5
+boxplot.whiskerprops.linewidth: 0.5
+boxplot.capprops.linewidth: 0.5
+boxplot.medianprops.linewidth: 0.5
+boxplot.meanprops.linewidth: 0.5
+
+text.usetex : True
+text.latex.preamble: "\usepackage{amsmath}"
