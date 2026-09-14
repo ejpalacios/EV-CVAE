@@ -14,10 +14,10 @@ The generated synthetic data is evaluated using distributional similarity metric
 
 ```
 ├── data/
-│   ├── CrowdCharge\_Transactions.parquet      # Raw CrowdCharge session data (Electric Nation)
-│   └── GreenFlux\_Transactions.parquet        # Raw GreenFlux session data (Electric Nation)
-├── Preprocessing\_V3\_4\_7\_Combined.ipynb       # Data preprocessing pipeline
-├── V3\_4\_8\_Combined.ipynb                     # CVAE model training, evaluation \& generation
+│   ├── CrowdCharge_Transactions.parquet          # Raw CrowdCharge session data (Electric Nation)
+│   └── GreenFlux_Transactions.parquet            # Raw GreenFlux session data (Electric Nation)
+├── EV_charging_transactions_preprocessing.ipynb  # Data preprocessing pipeline
+├── V3\_4\_8\_Combined.ipynb                      # CVAE model training, evaluation \& generation
 └── README.md
 ```
 
@@ -25,7 +25,7 @@ The generated synthetic data is evaluated using distributional similarity metric
 
 ## Notebooks
 
-### `EV\_charging\_transactions\_Preprocessing\_Final.ipynb`
+### `EV_charging_transactions_preprocessing.ipynb`
 
 Merges the CrowdCharge and GreenFlux datasets, filters outliers, selects and engineers features, applies cyclic time encoding, and saves the preprocessed dataset ready for model training.
 

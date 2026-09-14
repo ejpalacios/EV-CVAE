@@ -1,5 +1,5 @@
 figure.figsize: 3.5, 2.18
-figure.dpi: 300
+figure.dpi: 150
 lines.linewidth: 0.5
 lines.markersize: 3
 font.size: 6
