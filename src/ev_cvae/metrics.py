@@ -1,19 +1,41 @@
+"""Metric functions Module."""
+
+# Author: Graeme Kelly, Emilio J. Palacios-Garcia
+# SPDX-License-Identifier: MIT
+
 import numpy as np
 from scipy.stats import spearmanr, wasserstein_distance
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error
 
 
-# -------------------------
-# 1) Wasserstein metrics
-# -------------------------
-def w1_per_feature(real, synth):
-    return np.array(
-        [wasserstein_distance(real[:, d], synth[:, d]) for d in range(real.shape[1])]
-    )
+def w1_per_feature(real: np.ndarray, synth: np.ndarray) -> np.ndarray:
+    """Wasserstein 1 distance per feature betweewn two datasets.
+
+    Args:
+        real (np.ndarray): Real data array of shape (N, D).
+        synth (np.ndarray): Synthetic data array of shape (M, D).
+
+    Returns:
+        np.ndarray: Array of Wasserstein distances for each feature of shape (D,).
+    """
+    return np.array([wasserstein_distance(real[:, d], synth[:, d]) for d in range(real.shape[1])])
 
 
-def sliced_wasserstein(real, synth, n_proj=200, seed=0):
+def sliced_wasserstein(
+    real: np.ndarray, synth: np.ndarray, n_proj: int = 200, seed: int = 0
+) -> float:
+    """Sliced Wasserstein distance between two datasets.
+
+    Args:
+        real (np.ndarray): Real data array of shape (N, D).
+        synth (np.ndarray): Synthetic data array of shape (M, D).
+        n_proj (int, optional): Number of random projections. Defaults to 200.
+        seed (int, optional): Random seed for reproducibility. Defaults to 0.
+
+    Returns:
+        float: Sliced Wasserstein distance between the two datasets.
+    """
     rng = np.random.default_rng(seed)
     D = real.shape[1]
     dirs = rng.normal(size=(n_proj, D))
@@ -24,29 +46,49 @@ def sliced_wasserstein(real, synth, n_proj=200, seed=0):
     return float(np.mean(vals))
 
 
-# -------------------------
-# 2) Spearman corr structure
-# -------------------------
-def spearman_matrix(x):
+def spearman_matrix(x: np.ndarray) -> np.ndarray:
+    """Spearman correlation matrix for a given dataset.
+
+    Args:
+        x (np.ndarray): Input data array of shape (N, D).
+
+    Returns:
+        np.ndarray: Spearman correlation matrix of shape (D,
+    """
     D = x.shape[1]
     R = np.zeros((D, D), dtype=np.float32)
     for i in range(D):
         for j in range(D):
-            R[i, j] = spearmanr(x[:, i], x[:, j]).correlation
+            R[i, j] = spearmanr(x[:, i], x[:, j]).statistic
     return np.nan_to_num(R, nan=0.0)
 
 
-def corr_mae(real, synth):
+def corr_mae(real: np.ndarray, synth: np.ndarray) -> float:
+    """Spearman correlation matrix mean absolute error (MAE) between two datasets.
+
+    Args:
+        real (np.ndarray): Real data array of shape (N, D).
+        synth (np.ndarray): Synthetic data array of shape (M, D).
+
+    Returns:
+        float: MAE between the Spearman correlation matrices of the two
+    """
     Rr = spearman_matrix(real)
     Rs = spearman_matrix(synth)
     return float(np.mean(np.abs(Rr - Rs)))
 
 
-# -------------------------
-# 3) ACF MAE (build sequences by sorting within each condition)
-#    Uses WeekTime_sin/cos to define an ordering in the week.
-# -------------------------
-def acf_1d(x, max_lag):
+def acf_1d(x: np.ndarray, max_lag: int) -> np.ndarray | None:
+    """Autocorrelation function (ACF) for a 1D array.
+
+    Args:
+        x (np.ndarray): Input 1D array.
+        max_lag (int): Maximum lag for which to compute the ACF.
+
+    Returns:
+        np.ndarray | None: ACF values for lags 0 to max_lag,
+            or None if the input array is too short.
+    """
     x = np.asarray(x, dtype=np.float64)
     if len(x) < max_lag + 2:
         return None
@@ -59,7 +101,16 @@ def acf_1d(x, max_lag):
     return acf
 
 
-def build_sorted_sequence(X_scaled_block, x_cols):
+def build_sorted_sequence(X_scaled_block: np.ndarray, x_cols: list) -> np.ndarray:
+    """Build a sorted sequence of data based on the week-angle inferred from sine/cosine.
+
+    Args:
+        X_scaled_block (np.ndarray): Input data block of shape (N, D).
+        x_cols (list): List of column names corresponding to the features in X_scaled_block.
+
+    Returns:
+        np.ndarray: Sorted data block based on the week-angle.
+    """
     # sort by week-angle inferred from sin/cos
     si = x_cols.index("WeekTime_sin")
     co = x_cols.index("WeekTime_cos")
@@ -68,7 +119,28 @@ def build_sorted_sequence(X_scaled_block, x_cols):
     return X_scaled_block[order]
 
 
-def mean_acf_over_blocks(X, day_arr, managed_arr, x_cols, feature, max_lag=24):
+def mean_acf_over_blocks(
+    X: np.ndarray,
+    day_arr: np.ndarray,
+    managed_arr: np.ndarray,
+    x_cols: list,
+    feature: str,
+    max_lag: int = 24,
+) -> np.ndarray | None:
+    """Mean (ACF) over blocks of data defined by day and managed status.
+
+    Args:
+        X (np.ndarray): Input data array of shape (N, D).
+        day_arr (np.ndarray): Array indicating the day of the week for each sample.
+        managed_arr (np.ndarray): Array indicating the managed status for each sample.
+        x_cols (list): List of column names corresponding to the features in X.
+        feature (str): Feature name for which to compute the ACF.
+        max_lag (int, optional): Maximum lag for which to compute the ACF. Defaults to 24.
+
+    Returns:
+        np.ndarray: Mean ACF values for the specified feature across all blocks,
+            or None if no valid blocks were found.
+    """
     fi = x_cols.index(feature)
     acfs = []
     for d in range(7):
@@ -87,19 +159,32 @@ def mean_acf_over_blocks(X, day_arr, managed_arr, x_cols, feature, max_lag=24):
 
 
 def acf_mae(
-    X_real,
-    X_synth,
-    C_real,
-    C_synth,
-    x_cols,
-    feature="ConsumedkWh",
-    max_lag=24,
-):
+    X_real: np.ndarray,
+    X_synth: np.ndarray,
+    C_real: np.ndarray,
+    C_synth: np.ndarray,
+    x_cols: list,
+    feature: str,
+    max_lag: int = 24,
+) -> float | None:
+    """Calculate MAE) between ACFs of a specified feature in real and synthetic datasets.
+
+    Args:
+        X_real (np.ndarray): Real data array of shape (N, D).
+        X_synth (np.ndarray): Synthetic data array of shape (M, D).
+        C_real (np.ndarray): Condition array for real data of shape (N, 8).
+        C_synth (np.ndarray): Condition array for synthetic data of shape (M, 8).
+        x_cols (list): List of column names corresponding to the features in X.
+        feature (str): Feature name for which to compute the ACF.
+        max_lag (int, optional): Maximum lag for which to compute the ACF. Defaults to 24.
+
+    Returns:
+        float | None: MAE between the mean ACFs of the specified feature in real
+            and synthetic datasets, or None if no valid blocks were found in either dataset.
+    """
     day_real = np.argmax(C_real[:, :7], axis=1).astype(int)
     man_real = C_real[:, 7].round().astype(int)
-    ar = mean_acf_over_blocks(
-        X_real, day_real, man_real, x_cols, feature, max_lag=max_lag
-    )
+    ar = mean_acf_over_blocks(X_real, day_real, man_real, x_cols, feature, max_lag=max_lag)
 
     day_s = np.argmax(C_synth[:, :7], axis=1).astype(int)
     man_s = C_synth[:, 7].round().astype(int)
@@ -115,22 +200,39 @@ def acf_mae(
 #    Default: predict ConsumedkWh from the other features + condition
 # -------------------------
 def tstr_regression(
-    X_real_train,
-    C_real_train,
-    X_real_test,
-    C_real_test,
-    X_synth,
-    C_synth,
-    x_cols,
-    feature="ConsumedkWh",
-    seed=0,
-):
+    X_real_train: np.ndarray,
+    C_real_train: np.ndarray,
+    X_real_test: np.ndarray,
+    C_real_test: np.ndarray,
+    X_synth: np.ndarray,
+    C_synth: np.ndarray,
+    x_cols: list,
+    feature: str,
+    seed: int = 0,
+) -> tuple[dict, RandomForestRegressor, RandomForestRegressor]:
+    """Perform TSTR and TRTR regression using Random Forests and compute MAE for both.
+
+    Args:
+        X_real_train (np.ndarray): Real training data array of shape (N_train, D).
+        C_real_train (np.ndarray): Condition array for real training data of shape (N_train, 8).
+        X_real_test (np.ndarray): Real test data array of shape (N_test, D).
+        C_real_test (np.ndarray): Condition array for real test data of shape (N_test, 8).
+        X_synth (np.ndarray): Synthetic data array of shape (M, D).
+        C_synth (np.ndarray): Condition array for synthetic data of shape (M, 8).
+        x_cols (list): List of column names corresponding to the features in X.
+        feature (str): Feature name to predict.
+        seed (int, optional): Random seed for reproducibility. Defaults to 0.
+
+    Returns:
+        tuple[dict, RandomForestRegressor, RandomForestRegressor]: A tuple containing:
+            - A dictionary with MAE for TSTR and TRTR, and their ratio.
+            - The trained Random Forest model on real data (TRTR).
+            - The trained Random Forest model on synthetic data (TSTR).
+    """
     tgt_i = x_cols.index(feature)
 
     # Real train data
-    Xr_tr = np.concatenate(
-        [np.delete(X_real_train, tgt_i, axis=1), C_real_train], axis=1
-    )
+    Xr_tr = np.concatenate([np.delete(X_real_train, tgt_i, axis=1), C_real_train], axis=1)
     yr_tr = X_real_train[:, tgt_i]
 
     # Synthetic train data
@@ -163,8 +265,26 @@ def tstr_regression(
 
 
 def tstr_prediction(
-    m_real, m_syn, X_real_test, C_real_test, x_cols, feature="ConsumedKWh"
-):
+    m_real: RandomForestRegressor,
+    m_syn: RandomForestRegressor,
+    X_real_test: np.ndarray,
+    C_real_test: np.ndarray,
+    x_cols: list,
+    feature: str,
+) -> dict:
+    """Predict using trained Random Forest models and compute MAE for both TSTR and TRTR.
+
+    Args:
+        m_real (RandomForestRegressor): Trained Random Forest model on real data (TRTR).
+        m_syn (RandomForestRegressor): Trained Random Forest model on synthetic data (TSTR).
+        X_real_test (np.ndarray): Real test data array of shape (N_test, D).
+        C_real_test (np.ndarray): Condition array for real test data of shape (N_test, 8).
+        x_cols (list): List of column names corresponding to the features in X.
+        feature (str): Feature name to predict.
+
+    Returns:
+        dict: A dictionary with MAE for TSTR and TRTR, and their ratio.
+    """
     tgt_i = x_cols.index(feature)
 
     # Real test data
